@@ -1,0 +1,22 @@
+name: Push fantasy stats to TRMNL
+
+on:
+  schedule:
+    # Every 3 hours from ~7am-1am ET (cron is UTC). Adjust to taste.
+    - cron: "0 11,14,17,20,23,2,5 * * *"
+  workflow_dispatch: {}   # manual "Run workflow" button for testing
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Fetch ESPN data and push to TRMNL
+        env:
+          LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
+          TRMNL_WEBHOOK_URL: ${{ secrets.TRMNL_WEBHOOK_URL }}
+        run: python trmnl_fantasy_push.py
