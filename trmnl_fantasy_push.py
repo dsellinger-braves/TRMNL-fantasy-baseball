@@ -20,11 +20,11 @@ import requests
 # ----------------------------------------------------------------------------
 # Config
 # ----------------------------------------------------------------------------
-LEAGUE_ID = os.environ.get("LEAGUE_ID", "130215")
-SEASON = int(os.environ.get("SEASON", datetime.now().year))
-TRMNL_WEBHOOK_URL = os.environ.get(
-    "TRMNL_WEBHOOK_URL",
-    "https://usetrmnl.com/api/custom_plugins/YOUR_PLUGIN_UUID",
+LEAGUE_ID = os.environ.get("LEAGUE_ID") or "130215"
+SEASON = int(os.environ.get("SEASON") or datetime.now().year)
+TRMNL_WEBHOOK_URL = (
+    os.environ.get("TRMNL_WEBHOOK_URL")
+    or "https://usetrmnl.com/api/custom_plugins/YOUR_PLUGIN_UUID"
 )
 MAX_STANDINGS_ROWS = 12
 NAME_MAX_LEN = 18
@@ -43,6 +43,7 @@ HEADERS = {
 STAT_NAMES = {
     2: "AVG", 5: "HR", 17: "OBP", 18: "OPS", 20: "R", 21: "RBI", 23: "SB",
     41: "WHIP", 47: "ERA", 48: "K", 53: "W", 57: "SV", 58: "SVHD",
+    63: "QS", 83: "SVHD",
 }
 # Stats formatted as rate stats rather than counting numbers
 THREE_DECIMAL = {2, 17, 18}   # AVG / OBP / OPS -> .302
