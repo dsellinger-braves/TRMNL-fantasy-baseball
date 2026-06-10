@@ -22,10 +22,15 @@ import requests
 # ----------------------------------------------------------------------------
 LEAGUE_ID = os.environ.get("LEAGUE_ID") or "130215"
 SEASON = int(os.environ.get("SEASON") or datetime.now().year)
-TRMNL_WEBHOOK_URL = (
-    os.environ.get("TRMNL_WEBHOOK_URL")
-    or "https://usetrmnl.com/api/custom_plugins/YOUR_PLUGIN_UUID"
-)
+# One URL, or several separated by commas (one per league member's plugin)
+TRMNL_WEBHOOK_URLS = [
+    u.strip()
+    for u in (
+        os.environ.get("TRMNL_WEBHOOK_URL")
+        or "https://usetrmnl.com/api/custom_plugins/YOUR_PLUGIN_UUID"
+    ).split(",")
+    if u.strip()
+]
 MAX_STANDINGS_ROWS = 12
 NAME_MAX_LEN = 18
 
@@ -176,7 +181,7 @@ def build_payload(data: dict) -> dict:
     return {"merge_variables": merge_variables}
 
 
-def push_to_trmnl(payload: dict) -> None:
+def push_to_trmnl(payload: dict) -> int:
     body = json.dumps(payload, separators=(",", ":"))
     size = len(body.encode())
     print(f"Payload size: {size} bytes")
@@ -187,25 +192,32 @@ def push_to_trmnl(payload: dict) -> None:
         body = json.dumps(payload, separators=(",", ":"))
         print(f"Trimmed payload to {len(body.encode())} bytes")
 
-    resp = requests.post(
-        TRMNL_WEBHOOK_URL,
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=30,
-    )
-    print(f"TRMNL response: {resp.status_code} {resp.text[:200]}")
-    resp.raise_for_status()
+    failures = 0
+    for url in TRMNL_WEBHOOK_URLS:
+        try:
+            resp = requests.post(
+                url,
+                data=body,
+                headers={"Content-Type": "application/json"},
+                timeout=30,
+            )
+            print(f"TRMNL ...{url[-8:]}: {resp.status_code} {resp.text[:120]}")
+            resp.raise_for_status()
+        except Exception as e:  # one member's dead plugin shouldn't block the rest
+            failures += 1
+            print(f"FAILED ...{url[-8:]}: {e}")
+    return failures
 
 
 def main() -> int:
-    if "YOUR_PLUGIN_UUID" in TRMNL_WEBHOOK_URL:
+    if any("YOUR_PLUGIN_UUID" in u for u in TRMNL_WEBHOOK_URLS):
         print("Set TRMNL_WEBHOOK_URL (env var or edit the script).")
         return 1
     data = fetch_league()
     payload = build_payload(data)
     print(json.dumps(payload, indent=2))
-    push_to_trmnl(payload)
-    return 0
+    failures = push_to_trmnl(payload)
+    return 1 if failures == len(TRMNL_WEBHOOK_URLS) else 0
 
 
 if __name__ == "__main__":
