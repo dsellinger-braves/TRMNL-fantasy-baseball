@@ -45,6 +45,8 @@ STAT_NAMES = {
     41: "WHIP", 47: "ERA", 48: "K", 53: "W", 57: "SV", 58: "SVHD",
     63: "QS", 83: "SVHD",
 }
+# Display order for category leaders; anything not listed goes to the end.
+CATEGORY_ORDER = ["R", "HR", "RBI", "OBP", "SB", "QS", "K", "ERA", "WHIP", "SVHD"]
 # Stats formatted as rate stats rather than counting numbers
 THREE_DECIMAL = {2, 17, 18}   # AVG / OBP / OPS -> .302
 TWO_DECIMAL = {41, 47}        # WHIP / ERA -> 3.41
@@ -150,6 +152,14 @@ def build_category_leaders(data: dict) -> list[dict]:
                 "val": fmt_stat(sid, best_val),
             }
         )
+
+    def order_key(leader: dict) -> int:
+        try:
+            return CATEGORY_ORDER.index(leader["cat"])
+        except ValueError:
+            return len(CATEGORY_ORDER)  # unknown cats sort last
+
+    leaders.sort(key=order_key)
     return leaders
 
 
